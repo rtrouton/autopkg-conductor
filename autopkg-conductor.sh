@@ -199,9 +199,9 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
        
     if [[ ! -z "$slack_webhook" ]]; then
     
-       # If using a Slack webhook, At the end of the AutoPkg run, all standard error output logged
-       # to /tmp/autopkg_error.out should be output to Slack, using the
-       # SendToSlack function.
+       # If using a Slack webhook, at the end of the AutoPkg run all standard
+       # error output logged to /tmp/autopkg_error.out should be output to Slack,
+       # using the SendToSlack function.
     
        ScriptLogging "Sending AutoPkg error log to Slack"
        SendToSlack /tmp/autopkg_error.out ${slack_webhook}
