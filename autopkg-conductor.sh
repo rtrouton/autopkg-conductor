@@ -50,7 +50,7 @@ jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Pre
 # If using mine, the slack_post_processor variable should look like this:
 # slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
 
-slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
+slack_post_processor=""
 
 
 # If you're sending the results of your AutoPkg run to Slack, you'll need to set up
@@ -59,8 +59,12 @@ slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
 #
 # https://api.slack.com/incoming-webhooks
 # https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack
+#
+# Once a Slack webhook is available, the slack_webhook variable should look similar
+# to this:
+# slack_webhook="https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZ" 
 
-slack_webhook="https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZ"
+slack_webhook=""
 
 
 # don't change anything below this line
