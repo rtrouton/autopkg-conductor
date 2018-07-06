@@ -173,7 +173,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     fi    
         
     if [[ "$jamfpro_server" = "" ]]; then    
-        echo "Finished with AutoPkg run" >> /tmp/autopkg_error.out
+        echo "Finished with AutoPkg run" >> /tmp/autopkg.out
     else
         echo "Finished with AutoPkg run for $jamfpro_server" >> /tmp/autopkg.out
     fi
