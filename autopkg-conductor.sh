@@ -50,7 +50,7 @@ jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Pre
 # If using mine, the slack_post_processor variable should look like this:
 # slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
 
-slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
+slack_post_processor=""
 
 
 # If you're sending the results of your AutoPkg run to Slack, you'll need to set up
@@ -59,8 +59,12 @@ slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
 #
 # https://api.slack.com/incoming-webhooks
 # https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack
+#
+# Once a Slack webhook is available, the slack_webhook variable should look similar
+# to this:
+# slack_webhook="https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZ" 
 
-slack_webhook="https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZ"
+slack_webhook=""
 
 
 # don't change anything below this line
@@ -175,7 +179,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     fi    
         
     if [[ "$jamfpro_server" = "" ]]; then    
-        echo "Finished with AutoPkg run" >> /tmp/autopkg_error.out
+        echo "Finished with AutoPkg run" >> /tmp/autopkg.out
     else
         echo "Finished with AutoPkg run for $jamfpro_server" >> /tmp/autopkg.out
     fi
@@ -201,9 +205,9 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
        
     if [[ ! -z "$slack_webhook" ]]; then
     
-       # If using a Slack webhook, At the end of the AutoPkg run, all standard error output logged
-       # to /tmp/autopkg_error.out should be output to Slack, using the
-       # SendToSlack function.
+       # If using a Slack webhook, at the end of the AutoPkg run all standard
+       # error output logged to /tmp/autopkg_error.out should be output to Slack,
+       # using the SendToSlack function.
     
        ScriptLogging "Sending AutoPkg error log to Slack"
        SendToSlack /tmp/autopkg_error.out ${slack_webhook}
