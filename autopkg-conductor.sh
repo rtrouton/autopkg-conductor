@@ -111,7 +111,13 @@ if [[ ! -r "$recipe_list" ]]; then
     
     echo "$recipe_list is missing or unreadable. Fix immediately." >> /tmp/autopkg_error.out
     echo "" > /tmp/autopkg.out
-    SendToSlack /tmp/autopkg_error.out ${slack_webhook}
+    
+    # If a Slack webhook is configured, send the error log to Slack.
+    
+    if [[ ! -z "$slack_webhook" ]]; then
+        SendToSlack /tmp/autopkg_error.out ${slack_webhook}
+    fi
+    
     cat /tmp/autopkg_error.out >> "$log_location"
     ScriptLogging "Finished AutoPkg run"
     exit_error=1
