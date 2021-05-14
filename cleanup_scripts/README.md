@@ -19,4 +19,4 @@ The `801.clean-autopkg-repo` does the following task:
 The `802.remove.autopkg.wrapper.logs` script is designed to do the following:
 
 * Determine which log files, where the filename contains `autopkg-run-for`, in the `~/Library/Logs/Cache` directory are older than the number of days specified in the script (by default, 20 days)
-* Delete all relevant logfiles in the `~/Library/Logs/Cache` directory which are older than the specified number of days
+* Delete all relevant logfiles in the `~/Library/Logs` directory which are older than the specified number of days
