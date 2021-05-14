@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Remove AutoPkg-Wrapper files older than a specified number of days
+# Remove autopkg-conductor logfiles older than a specified number of days
 
 # Add username of the account used to run AutoPkg
 
