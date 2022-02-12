@@ -11,15 +11,15 @@ The `autopkg-conductor.sh` script is designed to do the following:
 
 The AutoPkg run has all actions logged to `~/Library/Logs`, with the logfiles being named **autopkg-run-for-** followed by the date.
 
-If the optional `slack_post_processor` and `slack_webhook` variables are both correctly populated, AutoPkg `.jss` recipes should have output sent to the Slack webhook specified in the `slack_webhook` variable.
+If the optional `slack_post_processor`, `slack_autopkg_processor` and `slack_webhook` variables are correctly populated, AutoPkg recipes for Jamf Upload or JSSImporter should have output sent to the Slack webhook specified in the `slack_webhook` variable.
 
-New package message:
+Jamf Upload new package message:
 
-![](readme_images/AutoPkg_new_package_message.png)
+![](readme_images/AutoPkg_JamfUpload_new_package_message.png)
 
-No new package message:
+JSSImporter new package message:
 
-![](readme_images/AutoPkg_no_new_package_message.png)
+![](readme_images/AutoPkg_JSSImporter_new_package_message.png)
 
 For more information, please see the link below:
 
