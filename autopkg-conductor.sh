@@ -26,15 +26,29 @@ autopkg_user_account_home=$(/usr/bin/dscl . -read /Users/"$autopkg_user_account"
 recipe_list="/path/to/recipe_list.txt"
 log_location="$autopkg_user_account_home/Library/Logs/autopkg-run-for-$(date +%Y-%m-%d-%H%M%S).log"
 
-# If you're using JSSImporter, the URL of your Jamf Pro server should be populated
+# If you're using JSSImporter or Jamf Upload, the URL of your Jamf Pro server should be populated
 # into the jamfpro_server variable automatically.
 #
-# If you're not using JSSImporter, this variable will return nothing and that's OK.
+# If you're not using JSSImporter or Jamf Upload, this variable will return nothing and that's OK.
 
 jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Preferences/com.github.autopkg JSS_URL)
 
 # Optional variables
 
+# This script supports using either Jamf Upload's JamfUploaderSlacker or JSSImporter's Slacker processors
+
+# JamfUploaderSlacker - used with Jamf Upload
+# 
+# To use the JamfUploaderSlacker post-processor, you'll need to use add Graham Pugh's
+# Autopkg repo by running the command below:
+#
+# autopkg repo-add grahampugh-recipes
+#
+# The slack_post_processor variable should look like this:
+# slack_post_processor="com.github.grahampugh.jamf-upload.processors/JamfUploaderSlacker"
+#
+# Slacker - used with JSSImporter
+# 
 # To use the Slacker post-processor, you'll need to use either Graham Pugh's or my
 # fork of Graham's. For information on Graham's, please see the following post:
 #
@@ -52,6 +66,24 @@ jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Pre
 
 slack_post_processor=""
 
+# The key used by the JamfUploaderSlacker and Slacker AutoPkg processors is slightly different
+# so the right one needs to be used when running AutoPkg. 
+#
+# JamfUploaderSlacker: slack_webhook_url
+#
+# Slacker: webhook_url
+#
+# Setting the slack_autopkg_processor variable will enable the script to use the correct key for the processor.
+#
+# If using JamfUploaderSlacker, the slack_autopkg_processor processor should be set as shown below:
+#
+# slack_autopkg_processor="JamfUploaderSlacker"
+#
+# If using Slacker, the slack_autopkg_processor processor should be set as shown below:
+#
+# slack_autopkg_processor="Slacker"
+
+slack_autopkg_processor=""
 
 # If you're sending the results of your AutoPkg run to Slack, you'll need to set up
 # a Slack webhook to receive the information being sent by the script. 
@@ -151,21 +183,39 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
 
     if [[ ! -z "$slack_webhook" ]]; then
     
-       if [[ ! -z "$slack_post_processor" ]]; then
+       if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_autopkg_processor" ]]; then
+       
+         if [[ ${slack_autopkg_processor} = "Slacker" ]] || [[ ${slack_autopkg_processor} = "JamfUploaderSlacker" ]]; then
 
-          # If both the Slacker post-processor and a Slack webhook are configured, the .jss
-          # recipes should have their outputs posted to Slack using the post-processor, while
+          # If both a post-processor to post to Slack and a Slack webhook are configured, the JSSImporter
+          # and Jamf Upload recipes should have their outputs posted to Slack using the post-processor, while
           # all other standard output should go to /tmp/autopkg.out. All standard error output 
           # should go to /tmp/autopkg_error.out
+          
+            if [[ ${slack_autopkg_processor} = "Slacker" ]]; then
+                slack_autopkg_processor_key="webhook_url"
+            elif [[ ${slack_autopkg_processor} = "JamfUploaderSlacker" ]]; then
+                slack_autopkg_processor_key="slack_webhook_url"
+            fi
+             
+             /usr/local/bin/autopkg run --recipe-list=${recipe_list} --post=${slack_post_processor} --key ${slack_autopkg_processor_key}=${slack_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+ 
+          else
 
-          /usr/local/bin/autopkg run --recipe-list="$recipe_list" --post="$slack_post_processor" --key webhook_url="$slack_webhook" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+            # If for some reason the slack_autopkg_processor variable is configured with an unknown value,
+            # neither processor is called and all standard output should go to /tmp/autopkg.out.
+            # All standard error output should go to /tmp/autopkg_error.out.
+            
+            /usr/local/bin/autopkg run --recipe-list=${recipe_list} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+            
+          fi
 
         else
 
           # If only using a Slack webhook, all standard output should go to /tmp/autopkg.out.
           # All standard error output should go to /tmp/autopkg_error.out.
           
-          /usr/local/bin/autopkg run --recipe-list="$recipe_list" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+          /usr/local/bin/autopkg run --recipe-list=${recipe_list} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
           
         fi
          
@@ -194,8 +244,21 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     
     if [[ -z "$slack_post_processor" ]] && [[ ! -z "$slack_webhook" ]]; then
     
-       # If the Slacker post-processor is not configured but we do have a Slack webhook
-       # set up, all standard output should be sent to Slack.
+       # If the AutoPkg post-processor for posting to Slack is not
+       # configured but we do have a Slack webhook set up, all 
+       # standard output should be sent to Slack.
+       
+       ScriptLogging "Sending AutoPkg output log to Slack"
+       SendToSlack /tmp/autopkg.out ${slack_webhook}
+       ScriptLogging "Sent AutoPkg output log to $slack_webhook."
+    
+    fi
+    
+    if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_webhook" ]] && [[ ${slack_autopkg_processor} != "Slacker" ]] && [[ ${slack_autopkg_processor} != "JamfUploaderSlacker" ]]; then
+    
+       # If the AutoPkg post-processor for posting to Slack is 
+       # misconfigured but we do have a Slack webhook set up, 
+       # all standard output should be sent to Slack.
        
        ScriptLogging "Sending AutoPkg output log to Slack"
        SendToSlack /tmp/autopkg.out ${slack_webhook}
@@ -209,12 +272,15 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
        # error output logged to /tmp/autopkg_error.out should be output to Slack,
        # using the SendToSlack function.
     
-       ScriptLogging "Sending AutoPkg error log to Slack"
-       SendToSlack /tmp/autopkg_error.out ${slack_webhook}
-       ScriptLogging "Sent autopkg log to $slack_webhook. Ending run."
+       if [[ $(wc -l </tmp/autopkg_error.out) -gt 7 ]]; then
+           ScriptLogging "Sending AutoPkg error log to Slack"
+           SendToSlack /tmp/autopkg_error.out ${slack_webhook}
+           ScriptLogging "Sent autopkg log to $slack_webhook. Ending run."
+       else
+           ScriptLogging "Error log was empty. Nothing to send to Slack."
+       fi
     
     fi
-
 fi
 
 exit "$exit_error"
