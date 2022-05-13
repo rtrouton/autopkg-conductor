@@ -198,7 +198,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
                 slack_autopkg_processor_key="slack_webhook_url"
             fi
              
-             /usr/local/bin/autopkg run --recipe-list=${recipe_list} --post=${slack_post_processor} --key ${slack_autopkg_processor_key}=${slack_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+             /usr/local/bin/autopkg run --recipe-list="${recipe_list}" --post=${slack_post_processor} --key ${slack_autopkg_processor_key}=${slack_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
  
           else
 
@@ -206,7 +206,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
             # neither processor is called and all standard output should go to /tmp/autopkg.out.
             # All standard error output should go to /tmp/autopkg_error.out.
             
-            /usr/local/bin/autopkg run --recipe-list=${recipe_list} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+            /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
             
           fi
 
@@ -215,7 +215,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
           # If only using a Slack webhook, all standard output should go to /tmp/autopkg.out.
           # All standard error output should go to /tmp/autopkg_error.out.
           
-          /usr/local/bin/autopkg run --recipe-list=${recipe_list} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+          /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
           
         fi
          
@@ -225,7 +225,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
           # If a Slack webhook is not configured, all standard output should go to /tmp/autopkg.out.
           # All standard error output should go to /tmp/autopkg_error.out.
     
-       /usr/local/bin/autopkg run --recipe-list="$recipe_list" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+       /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
     fi    
         
     if [[ "$jamfpro_server" = "" ]]; then    
