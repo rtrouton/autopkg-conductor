@@ -26,16 +26,15 @@ autopkg_user_account_home=$(/usr/bin/dscl . -read /Users/"$autopkg_user_account"
 recipe_list="/path/to/recipe_list.txt"
 log_location="$autopkg_user_account_home/Library/Logs/autopkg-run-for-$(date +%Y-%m-%d-%H%M%S).log"
 
-# If you're using JSSImporter or Jamf Upload, the URL of your Jamf Pro server should be populated
-# into the jamfpro_server variable automatically.
+# If you're using Jamf Upload, the URL of your Jamf Pro server should be populated into the jamfpro_server variable automatically.
 #
-# If you're not using JSSImporter or Jamf Upload, this variable will return nothing and that's OK.
+# If you're not using Jamf Upload, this variable will return nothing and that's OK.
 
 jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Preferences/com.github.autopkg JSS_URL)
 
 # Optional variables
 
-# This script supports using either Jamf Upload's JamfUploaderSlacker or JSSImporter's Slacker processors
+# This script supports using either Jamf Upload's JamfUploaderSlacker or Jamf Upload's JamfUploaderTeamsNotifier processors
 
 # JamfUploaderSlacker - used with Jamf Upload
 # 
@@ -46,44 +45,20 @@ jamfpro_server=$(/usr/bin/defaults read "$autopkg_user_account_home"/Library/Pre
 #
 # The slack_post_processor variable should look like this:
 # slack_post_processor="com.github.grahampugh.jamf-upload.processors/JamfUploaderSlacker"
-#
-# Slacker - used with JSSImporter
-# 
-# To use the Slacker post-processor, you'll need to use either Graham Pugh's or my
-# fork of Graham's. For information on Graham's, please see the following post:
-#
-# http://grahampugh.github.io/2017/12/22/slack-for-autopkg-jssimporter.html
-#
-# To use mine, please add my AutoPkg repo by running the following command:
-#
-# autopkg repo-add rtrouton-recipes
-#
-# If using Graham's, the slack_post_processor variable should look like this:
-# slack_post_processor="com.github.grahampugh.recipes.postprocessors/Slacker"
-#
-# If using mine, the slack_post_processor variable should look like this:
-# slack_post_processor="com.github.rtrouton.recipes.postprocessors/Slacker"
 
 slack_post_processor=""
 
-# The key used by the JamfUploaderSlacker and Slacker AutoPkg processors is slightly different
-# so the right one needs to be used when running AutoPkg. 
+# JamfUploaderTeamsNotifier - used with Jamf Upload
+# 
+# To use the JamfUploaderTeamsNotifier post-processor, you'll need to use add Graham Pugh's
+# Autopkg repo by running the command below:
 #
-# JamfUploaderSlacker: slack_webhook_url
+# autopkg repo-add grahampugh-recipes
 #
-# Slacker: webhook_url
-#
-# Setting the slack_autopkg_processor variable will enable the script to use the correct key for the processor.
-#
-# If using JamfUploaderSlacker, the slack_autopkg_processor processor should be set as shown below:
-#
-# slack_autopkg_processor="JamfUploaderSlacker"
-#
-# If using Slacker, the slack_autopkg_processor processor should be set as shown below:
-#
-# slack_autopkg_processor="Slacker"
+# The teams_post_processor variable should look like this:
+# teams_post_processor="com.github.grahampugh.jamf-upload.processors/JamfUploaderTeamsNotifier"
 
-slack_autopkg_processor=""
+teams_post_processor=""
 
 # If you're sending the results of your AutoPkg run to Slack, you'll need to set up
 # a Slack webhook to receive the information being sent by the script. 
@@ -98,6 +73,17 @@ slack_autopkg_processor=""
 
 slack_webhook=""
 
+# If you're sending the results of your AutoPkg run to Teams, you'll need to set up
+# a Teams webhook to receive the information being sent by the script. 
+# If you need help with configuring a Slack webhook, please see the links below:
+#
+# https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
+#
+# Once a Teams webhook is available, the teams_webhook variable should look similar
+# to this:
+# teams_webhook="https://companyname.webhook.office.com/webhookb2/7ce853bd-a9e1-462f-ae32-d3d35ed5295d@7c155bae-5207-4bb5-8b58-c43228bc1bb7/IncomingWebhook/8155d8581864479287b68b93f89556ae/651e63f8-2d96-42ab-bb51-65cb05fc62aa"
+
+teams_webhook=""
 
 # don't change anything below this line
 
@@ -126,6 +112,46 @@ cat "$1" | while read LINE; do
 done
 
 }
+
+# Function for sending multi-line output to a Teams webhook.
+
+SendToTeams(){
+
+while read LINE; do
+  (echo "${LINE}" | grep -e "$3") && curl -X POST -H 'Content-Type: application/json' --silent -d "{\"text\": \"${LINE//\"/\'/}\"}" "$2";
+done < "$1"
+
+}
+
+# Function for AutoPkg runs
+
+RunAutoPkg(){
+
+if [[ ! -z "$slack_autopkg_report" ]] && [[ -z "$teams_autopkg_report" ]]; then
+    /usr/local/bin/autopkg run --recipe-list="${recipe_list}" --post=${slack_post_processor} --key ${slack_autopkg_postprocessor_key}=${slack_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+elif [[ -z "$slack_autopkg_report" ]] && [[ ! -z "$teams_autopkg_report" ]]; then
+   /usr/local/bin/autopkg run --recipe-list="${recipe_list}" --post=${teams_post_processor} --key ${teams_autopkg_postprocessor_key}=${teams_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+elif [[ ! -z "$slack_autopkg_report" ]] && [[ ! -z "$teams_autopkg_report" ]]; then
+   /usr/local/bin/autopkg run --recipe-list="${recipe_list}" --post=${slack_post_processor} --key ${slack_autopkg_postprocessor_key}=${slack_webhook} --post=${teams_post_processor} --key ${teams_autopkg_postprocessor_key}=${teams_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+else
+   /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+fi
+
+}
+
+# The key used by the JamfUploaderSlacker and JamfUploaderTeamsNotifier AutoPkg processors is slightly different
+# so the right one needs to be used when running AutoPkg. 
+#
+# JamfUploaderSlacker: slack_webhook_url
+#
+# JamfUploaderTeamsNotifier: teams_webhook_url
+#
+# The slack_autopkg_postprocessor and teams_autopkg_postprocessor variables will enable
+# the script to identify the correct key for the processor.
+
+slack_autopkg_postprocessor=${slack_post_processor#*/}
+
+teams_autopkg_postprocessor=${teams_post_processor#*/}
 
 # If the AutoPkg run's log file is not available, create it
 
@@ -176,57 +202,60 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
         
     echo "" >> /tmp/autopkg.out
     echo "" > /tmp/autopkg_error.out
-    echo "Error log for AutoPkg run" >> /tmp/autopkg_error.out
+    
+    if [[ "$jamfpro_server" = "" ]]; then    
+         echo "Error log for AutoPkg run" >> /tmp/autopkg_error.out
+    else
+         echo "Error log for AutoPkg run to $jamfpro_server" >> /tmp/autopkg_error.out
+    fi
+
     echo "" >> /tmp/autopkg_error.out 
     /usr/local/bin/autopkg repo-update all 2>&1 >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
     cat /tmp/autopkg.out >> "$log_location" && cat /tmp/autopkg_error.out >> "$log_location"
 
+    # If a webhook for Slack is configured, send output to Slack
+
     if [[ ! -z "$slack_webhook" ]]; then
     
-       if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_autopkg_processor" ]]; then
-       
-         if [[ ${slack_autopkg_processor} = "Slacker" ]] || [[ ${slack_autopkg_processor} = "JamfUploaderSlacker" ]]; then
+       if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_autopkg_postprocessor" ]]; then
 
-          # If both a post-processor to post to Slack and a Slack webhook are configured, the JSSImporter
-          # and Jamf Upload recipes should have their outputs posted to Slack using the post-processor, while
-          # all other standard output should go to /tmp/autopkg.out. All standard error output 
-          # should go to /tmp/autopkg_error.out
+         if [[ ${slack_autopkg_postprocessor} = "JamfUploaderSlacker" ]]; then
+
+          # If both a post-processor to post to Slack and a Slack webhook are configured and nothing is configured for Teams,
+          # the Jamf Upload recipes should have their outputs posted to Slack using the post-processor, while all other
+          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out
           
-            if [[ ${slack_autopkg_processor} = "Slacker" ]]; then
-                slack_autopkg_processor_key="webhook_url"
-            elif [[ ${slack_autopkg_processor} = "JamfUploaderSlacker" ]]; then
-                slack_autopkg_processor_key="slack_webhook_url"
+            if [[ ${slack_autopkg_postprocessor} = "JamfUploaderSlacker" ]]; then
+                slack_autopkg_postprocessor_key="slack_webhook_url"
+                slack_autopkg_report=1
             fi
-             
-             /usr/local/bin/autopkg run --recipe-list="${recipe_list}" --post=${slack_post_processor} --key ${slack_autopkg_processor_key}=${slack_webhook} >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
- 
-          else
+         fi
+       fi
+    fi
 
-            # If for some reason the slack_autopkg_processor variable is configured with an unknown value,
-            # neither processor is called and all standard output should go to /tmp/autopkg.out.
-            # All standard error output should go to /tmp/autopkg_error.out.
-            
-            /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
-            
-          fi
+    # If a webhook for Teams is configured, send output to Teams
 
-        else
-
-          # If only using a Slack webhook, all standard output should go to /tmp/autopkg.out.
-          # All standard error output should go to /tmp/autopkg_error.out.
-          
-          /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
-          
-        fi
-         
-      
-      else
-
-          # If a Slack webhook is not configured, all standard output should go to /tmp/autopkg.out.
-          # All standard error output should go to /tmp/autopkg_error.out.
+    if [[ ! -z "$teams_webhook" ]]; then
     
-       /usr/local/bin/autopkg run --recipe-list="${recipe_list}" >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
-    fi    
+       if [[ ! -z "$teams_post_processor" ]] && [[ ! -z "$teams_autopkg_postprocessor" ]]; then
+
+         if [[ ${teams_autopkg_postprocessor} = "JamfUploaderTeamsNotifier" ]]; then
+
+          # If both a post-processor to post to Teams and a Teams webhook are configured and nothing is configured for Slack,
+          # the Jamf Upload recipes should have their outputs posted to Teams using the post-processor, while all other
+          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out
+          
+            if [[ ${teams_autopkg_postprocessor} = "JamfUploaderTeamsNotifier" ]]; then
+                teams_autopkg_postprocessor_key="teams_webhook_url"
+                teams_autopkg_report=1
+            fi
+         fi
+       fi
+    fi   
+    
+    # Run AutoPkg with the configured reporting options for Slack and/or Teams         
+
+    RunAutoPkg 
         
     if [[ "$jamfpro_server" = "" ]]; then    
         echo "Finished with AutoPkg run" >> /tmp/autopkg.out
@@ -244,25 +273,25 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     
     if [[ -z "$slack_post_processor" ]] && [[ ! -z "$slack_webhook" ]]; then
     
-       # If the AutoPkg post-processor for posting to Slack is not
-       # configured but we do have a Slack webhook set up, all 
-       # standard output should be sent to Slack.
+       # If the AutoPkg post-processor for posting to Slack is 
+       # not configured but we do have a Slack webhook set up, 
+       # all standard output should be sent to Slack.
        
        ScriptLogging "Sending AutoPkg output log to Slack"
        SendToSlack /tmp/autopkg.out ${slack_webhook}
        ScriptLogging "Sent AutoPkg output log to $slack_webhook."
     
     fi
+
+    if [[ -z "$teams_post_processor" ]] && [[ ! -z "$teams_webhook" ]]; then
     
-    if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_webhook" ]] && [[ ${slack_autopkg_processor} != "Slacker" ]] && [[ ${slack_autopkg_processor} != "JamfUploaderSlacker" ]]; then
-    
-       # If the AutoPkg post-processor for posting to Slack is 
-       # misconfigured but we do have a Slack webhook set up, 
-       # all standard output should be sent to Slack.
+       # If the AutoPkg post-processor for posting to Teams is 
+       # not configured but we do have a Teams webhook set up, 
+       # all standard output should be sent to Teams.
        
-       ScriptLogging "Sending AutoPkg output log to Slack"
-       SendToSlack /tmp/autopkg.out ${slack_webhook}
-       ScriptLogging "Sent AutoPkg output log to $slack_webhook."
+       ScriptLogging "Sending AutoPkg output log to Teams"
+       SendToTeams /tmp/autopkg.out ${teams_webhook}
+       ScriptLogging "Sent AutoPkg output log to $teams_webhook."
     
     fi
        
@@ -278,6 +307,22 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
            ScriptLogging "Sent autopkg log to $slack_webhook. Ending run."
        else
            ScriptLogging "Error log was empty. Nothing to send to Slack."
+       fi
+    
+    fi
+
+    if [[ ! -z "$teams_webhook" ]]; then
+    
+       # If using a Teams webhook, at the end of the AutoPkg run all standard
+       # error output logged to /tmp/autopkg_error.out should be output to Teams,
+       # using the SendToTeams function.
+    
+       if [[ $(wc -l </tmp/autopkg_error.out) -gt 7 ]]; then
+           ScriptLogging "Sending AutoPkg error log to Teams"
+           SendToTeams /tmp/autopkg_error.out ${teams_webhook}
+           ScriptLogging "Sent autopkg log to $teams_webhook. Ending run."
+       else
+           ScriptLogging "Error log was empty. Nothing to send to Teams."
        fi
     
     fi
