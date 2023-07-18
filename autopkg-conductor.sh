@@ -26,6 +26,22 @@ autopkg_user_account_home=$(/usr/bin/dscl . -read /Users/"$autopkg_user_account"
 recipe_list="/path/to/recipe_list.txt"
 log_location="$autopkg_user_account_home/Library/Logs/autopkg-run-for-$(date +%Y-%m-%d-%H%M%S).log"
 
+# Choose whether or not you want to update your AutoPkg repos as part of the script run.
+#
+# If you want to have AutoPkg update your repos as part of the script run, the update_repos 
+# variable should look like this:
+#
+# update_repos="yes"
+#
+# By default, this is how the variable is configured.
+#
+# If you don't want to have AutoPkg update your repos as part of the script run, the update_repos 
+# variable should look like this:
+#
+# update_repos=""
+
+update_repos="yes"
+
 # If you're using Jamf Upload, the URL of your Jamf Pro server should be populated into the jamfpro_server variable automatically.
 #
 # If you're not using Jamf Upload, this variable will return nothing and that's OK.
@@ -209,8 +225,12 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
          echo "Error log for AutoPkg run to $jamfpro_server" >> /tmp/autopkg_error.out
     fi
 
-    echo "" >> /tmp/autopkg_error.out 
-    /usr/local/bin/autopkg repo-update all 2>&1 >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+    echo "" >> /tmp/autopkg_error.out
+
+    if [[ "$update_repos" = "yes" ]]; then
+        /usr/local/bin/autopkg repo-update all 2>&1 >> /tmp/autopkg.out 2>>/tmp/autopkg_error.out
+    fi
+
     cat /tmp/autopkg.out >> "$log_location" && cat /tmp/autopkg_error.out >> "$log_location"
 
     # If a webhook for Slack is configured, send output to Slack
