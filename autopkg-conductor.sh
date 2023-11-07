@@ -196,6 +196,12 @@ if [[ ! -r "$recipe_list" ]]; then
         SendToSlack /tmp/autopkg_error.out ${slack_webhook}
     fi
     
+    # If a Teams webhook is configured, send the error log to Teams.
+    
+    if [[ ! -z "$teams_webhook" ]]; then
+        SendToTeams /tmp/autopkg_error.out ${teams_webhook}
+    fi
+    
     cat /tmp/autopkg_error.out >> "$log_location"
     ScriptLogging "Finished AutoPkg run"
     exit_error=1
