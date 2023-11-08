@@ -129,13 +129,17 @@ done
 
 }
 
-# Function for sending multi-line output to a Teams webhook.
+# Function for sending multi-line output to a Teams webhook. We add an extra Return to
+# each line of the log file ($1) to prevent Teams from showing the log on a single line.
+# The Teams Card format requires JSON to be sent to the Teams webhook ($2).
+# You can add a title to the Card by specifying it as a third argument.
+
 
 SendToTeams(){
 
-while read LINE; do
-  (echo "${LINE}" | grep -e "$3") && curl -X POST -H 'Content-Type: application/json' --silent -d "{\"text\": \"${LINE//\"/\'/}\"}" "$2";
-done < "$1"
+LOG_TEXT=$( cat "$1" | sed "s/\"/'/g" | sed "s/$/\r\r/g" )
+TEAMS_JSON="{\"title\": \"$3\", \"text\": \"${LOG_TEXT}\" }"
+curl -H "Content-Type: application/json" -d "${TEAMS_JSON}" "$2"
 
 }
 
@@ -194,6 +198,12 @@ if [[ ! -r "$recipe_list" ]]; then
     
     if [[ ! -z "$slack_webhook" ]]; then
         SendToSlack /tmp/autopkg_error.out ${slack_webhook}
+    fi
+    
+    # If a Teams webhook is configured, send the error log to Teams.
+    
+    if [[ ! -z "$teams_webhook" ]]; then
+        SendToTeams /tmp/autopkg_error.out ${teams_webhook} "AutoPkg-Conductor Configuration Error"
     fi
     
     cat /tmp/autopkg_error.out >> "$log_location"
@@ -310,7 +320,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
        # all standard output should be sent to Teams.
        
        ScriptLogging "Sending AutoPkg output log to Teams"
-       SendToTeams /tmp/autopkg.out ${teams_webhook}
+       SendToTeams /tmp/autopkg.out ${teams_webhook} "AutoPkg-Conductor Run $(date +%Y-%m-%d\ %H:%M:%S)"
        ScriptLogging "Sent AutoPkg output log to $teams_webhook."
     
     fi
@@ -339,7 +349,7 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     
        if [[ $(wc -l </tmp/autopkg_error.out) -gt 7 ]]; then
            ScriptLogging "Sending AutoPkg error log to Teams"
-           SendToTeams /tmp/autopkg_error.out ${teams_webhook}
+           SendToTeams /tmp/autopkg_error.out ${teams_webhook} "AutoPkg-Conductor Error Log"
            ScriptLogging "Sent autopkg log to $teams_webhook. Ending run."
        else
            ScriptLogging "Error log was empty. Nothing to send to Teams."
