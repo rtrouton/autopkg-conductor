@@ -91,7 +91,7 @@ slack_webhook=""
 
 # If you're sending the results of your AutoPkg run to Teams, you'll need to set up
 # a Teams webhook to receive the information being sent by the script. 
-# If you need help with configuring a Slack webhook, please see the links below:
+# If you need help with configuring a Teams webhook, please see the links below:
 #
 # https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
 #
