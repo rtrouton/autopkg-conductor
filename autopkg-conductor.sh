@@ -249,17 +249,14 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     
        if [[ ! -z "$slack_post_processor" ]] && [[ ! -z "$slack_autopkg_postprocessor" ]]; then
 
-         if [[ ${slack_autopkg_postprocessor} = "JamfUploaderSlacker" ]]; then
-
           # If both a post-processor to post to Slack and a Slack webhook are configured and nothing is configured for Teams,
           # the Jamf Upload recipes should have their outputs posted to Slack using the post-processor, while all other
-          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out
+          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out.
           
-            if [[ ${slack_autopkg_postprocessor} = "JamfUploaderSlacker" ]]; then
-                slack_autopkg_postprocessor_key="slack_webhook_url"
-                slack_autopkg_report=1
-            fi
-         fi
+          if [[ ${slack_autopkg_postprocessor} = "JamfUploaderSlacker" ]]; then
+             slack_autopkg_postprocessor_key="slack_webhook_url"
+             slack_autopkg_report=1
+          fi
        fi
     fi
 
@@ -269,17 +266,14 @@ if [[ -x /usr/local/bin/autopkg ]] && [[ -r "$recipe_list" ]]; then
     
        if [[ ! -z "$teams_post_processor" ]] && [[ ! -z "$teams_autopkg_postprocessor" ]]; then
 
-         if [[ ${teams_autopkg_postprocessor} = "JamfUploaderTeamsNotifier" ]]; then
-
           # If both a post-processor to post to Teams and a Teams webhook are configured and nothing is configured for Slack,
           # the Jamf Upload recipes should have their outputs posted to Teams using the post-processor, while all other
-          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out
+          # output should go to /tmp/autopkg.out. All standard error output should go to /tmp/autopkg_error.out.
           
-            if [[ ${teams_autopkg_postprocessor} = "JamfUploaderTeamsNotifier" ]]; then
-                teams_autopkg_postprocessor_key="teams_webhook_url"
-                teams_autopkg_report=1
-            fi
-         fi
+          if [[ ${teams_autopkg_postprocessor} = "JamfUploaderTeamsNotifier" ]]; then
+             teams_autopkg_postprocessor_key="teams_webhook_url"
+             teams_autopkg_report=1
+          fi
        fi
     fi   
     
