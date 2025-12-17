@@ -7,8 +7,6 @@ To assist with preserving available disk space on your AutoPkg host Mac, the fol
 
 If scheduled runs are wanted, both scripts can be run by either a LaunchAgent or LaunchDaemon.
 
-Installing them in that location will enable them to be run daily on your AutoPkg host Mac.
-
 The `clean-autopkg-repo.sh` does the following task:
 
 * Determine which files in the `~/Library/AutoPkg/Cache` directory are older than the number of days specified in the script (by default, 20 days)
